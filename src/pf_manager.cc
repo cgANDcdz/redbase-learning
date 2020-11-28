@@ -13,6 +13,16 @@
 #include "pf_internal.h"
 #include "pf_buffermgr.h"
 
+
+/*********************************************************************************************
+ *                                          文件管理器
+ * 作用:完成文件的创建、打开、关闭、删除等工作
+ * 注意事项:
+ *    1.包含指向PF_BufferMgr的指针
+ *    2.对于打开的文件,rebase添加了自行定义的文件头信息(4byte)
+ *    3.理解unlink函数(见CreateFile)
+ *    4.如何理解scratch page(AllocateBlock()与之相关) ??? 
+ * *******************************************************************************************/
 //
 // PF_Manager
 //
@@ -47,6 +57,11 @@ PF_Manager::~PF_Manager()
 // In:   fileName - name of file to create
 // Ret:  PF return code
 //
+/******************************************************************
+ * .通过系统调用open创建文件,然后将自定义形式的头信息写入文件开始处 
+ * .理解unlink(fname)函数:如果指向这个文件的引用数(硬链接)大于1,则引用计
+ *    数减一;否则删除这个文件
+ * ****************************************************************/
 RC PF_Manager::CreateFile (const char *fileName)
 {
    int fd;		// unix file descriptor
@@ -68,11 +83,12 @@ RC PF_Manager::CreateFile (const char *fileName)
    // So that Purify doesn't complain
    memset(hdrBuf, 0, PF_FILE_HDR_SIZE);
 
-   PF_FileHdr *hdr = (PF_FileHdr*)hdrBuf;
+   PF_FileHdr *hdr = (PF_FileHdr*)hdrBuf;     /*文件头信息*/
    hdr->firstFree = PF_PAGE_LIST_END;
    hdr->numPages = 0;
 
    // Write header to file
+   /* 将头信息写入文件 */
    if((numBytes = write(fd, hdrBuf, PF_FILE_HDR_SIZE))
          != PF_FILE_HDR_SIZE) {
 
@@ -129,6 +145,7 @@ RC PF_Manager::DestroyFile (const char *fileName)
 //       buffer manager object
 // Ret:  PF_FILEOPEN or other PF return code
 //
+/* 使用open系统调用打开一个已通过CreateFile创建的文件; 将这个打开的文件与PF_FileHandle对象关联! */
 RC PF_Manager::OpenFile (const char *fileName, PF_FileHandle &fileHandle)
 {
    int rc;                   // return code
@@ -186,6 +203,7 @@ err:
 //                    this function modifies local var's in fileHandle
 // Ret:  PF return code
 //
+/* 关闭已打开文件,将文件所有页释放; 如果有页仍然pinned在buffer中,返回错误! */
 RC PF_Manager::CloseFile(PF_FileHandle &fileHandle)
 {
    RC rc;

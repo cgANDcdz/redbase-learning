@@ -18,6 +18,16 @@
 
 #include "redbase.h"
 
+/********************************************************************************
+ *                         PF 相关类的声明
+ * 
+ * 1.每个page头部都有部分头信息,头信息占4Byte
+ * 2.
+ * *****************************************************************************/
+
+
+
+
 //
 // PageNum: uniquely identifies a page in a file
 //
@@ -30,7 +40,7 @@ typedef int PageNum;
 // Unfortunately, we cannot use sizeof(PF_PageHdr) here, but it is an
 // int and we simply use that.
 //
-const int PF_PAGE_SIZE = 4096 - sizeof(int);
+const int PF_PAGE_SIZE = 4096 - sizeof(int);    /*4092*/
 
 //
 // PF_PageHandle: PF page interface
@@ -188,7 +198,7 @@ void PF_PrintError(RC rc);
 #define PF_INVALIDNAME     (START_PF_ERR - 9) // invalid PC file name
 
 // Error in UNIX system call or library routine
-#define PF_UNIX            (START_PF_ERR - 10) // Unix error
+#define PF_UNIX            (START_PF_ERR - 10) // Unix error  /* 系统错误,而非redbase程序错误 */
 #define PF_LASTERROR       PF_UNIX
 
 #endif

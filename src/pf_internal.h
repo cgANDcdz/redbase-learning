@@ -41,6 +41,6 @@ struct PF_PageHdr {
 };
 
 // Justify the file header to the length of one page
-const int PF_FILE_HDR_SIZE = PF_PAGE_SIZE + sizeof(PF_PageHdr);
+const int PF_FILE_HDR_SIZE = PF_PAGE_SIZE + sizeof(PF_PageHdr); /*文件头信息大小 => 4096Byte*/
 
 #endif
