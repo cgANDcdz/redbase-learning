@@ -12,6 +12,18 @@
 //
 #define INVALID_PAGE   (-1)
 
+
+/**************************************************************************************
+ *                                  页处理器
+ * 作用:与一个page绑定(见PF_FileHandle),完成对该page访问
+ * 
+ * 注意事项:
+ * 	1.PF_FileHandle是本类的友元类 => 从而PF_FileHandler能访问/修改本类的任意成员;
+ * 
+ * ************************************************************************************/
+
+
+
 //
 // PF_PageHandle
 //
@@ -89,6 +101,7 @@ PF_PageHandle& PF_PageHandle::operator= (const PF_PageHandle &pageHandle)
 // Out:  pData - Set pData to point to the page contents
 // Ret:  PF return code
 //
+/* 将该page数据部分的指针赋值给pData; 注意这个page必须缓存在缓冲区中 */
 RC PF_PageHandle::GetData(char *&pData) const
 {
   // Page must refer to a pinned page

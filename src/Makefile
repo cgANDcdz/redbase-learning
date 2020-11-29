@@ -13,7 +13,7 @@ BUILD_DIR      = ../build/
 LIB_DIR        = ../lib/
 INC_DIRS       = -I.
 AR             = ar -rc
-RANLIB         = ranlib
+RANLIB         = ranlib      # 作用:ranlib 命令用于 更新库的符号索引表
 YACC           = bison -dy
 LEX            = flex
 
@@ -77,6 +77,7 @@ all: $(LIBRARIES) $(UTILS)
 clean:
 	rm -f $(BUILD_DIR)*.o $(BUILD_DIR)*.d y.output y.tab.h parse.c $(LIBRARIES) $(EXECUTABLES)
 
+# 生成可执行的测试程序
 testers: all $(TESTS)
 
 #
@@ -140,6 +141,6 @@ $(BUILD_DIR)%.d: %.cc
 $(OBJECTS): %.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# 生成的可执行测试程序,比如 pf_test1 pf_test2 pf_test3
 $(EXECUTABLES): %: $(BUILD_DIR)%.o $(LIBRARIES)
 	$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) $(LIBS)
-

@@ -10,6 +10,21 @@
 #include "pf_internal.h"
 #include "pf_buffermgr.h"
 
+/**************************************************************************************
+ *                               文件处理器
+ * 作用:与一个打开文件相关联(见PF_Manager::OpenFile),从而处理该文件中的pages(通过PF_PageHandle)
+ * 
+ * 注意事项:
+ *    1.同PF_Manager一样,也有指向PF_BufferMgr的指针;
+ *    2.PF_Manager是本类的友元类 => 从而PF_Manager能访问/修改PF_FileHandle的任意成员;
+ *    3.重点关注函数GetThisPage、AllocatePage、DisposePage、ForcePages、FlushPages
+ *
+ * ************************************************************************************/
+
+
+
+
+
 //
 // PF_FileHandle
 //
@@ -93,6 +108,7 @@ PF_FileHandle& PF_FileHandle::operator= (const PF_FileHandle &fileHandle)
 //       The referenced page is pinned in the buffer pool.
 // Ret:  PF return code
 //
+/* 获取当前文件的第一个page,并将一个PF_PageHandle对象与之绑定 */
 RC PF_FileHandle::GetFirstPage(PF_PageHandle &pageHandle) const
 {
    return (GetNextPage((PageNum)-1, pageHandle));
@@ -201,6 +217,7 @@ RC PF_FileHandle::GetPrevPage(PageNum current, PF_PageHandle &pageHandle) const
 //       The referenced page is pinned in the buffer pool.
 // Ret:  PF return code
 //
+/* 读取指定的页号的page到内存缓冲区; 同时将此page与一个PF_PageHandle对象绑定 */
 RC PF_FileHandle::GetThisPage(PageNum pageNum, PF_PageHandle &pageHandle) const
 {
    int  rc;               // return code
@@ -246,6 +263,7 @@ RC PF_FileHandle::GetThisPage(PageNum pageNum, PF_PageHandle &pageHandle) const
 //                    this function modifies local var's in pageHandle
 // Ret:  PF return code
 //
+/* 给当前文件分配一个新的page; 将新的page读取到内存缓冲区; 同时将新的page与pageHandle绑定 */
 RC PF_FileHandle::AllocatePage(PF_PageHandle &pageHandle)
 {
    int     rc;               // return code
@@ -315,6 +333,10 @@ RC PF_FileHandle::AllocatePage(PF_PageHandle &pageHandle)
 // In:   pageNum - number of page to dispose
 // Ret:  PF return code
 //
+/*******************************************************************************
+ *  释放当前文件中pageNum对应的page; 必须先向将其从缓冲区中unpin,然后才能释放
+ *  为什么需要释放page? => 应该是从数据库删除数据的情况
+ * ******************************************************************************/
 RC PF_FileHandle::DisposePage(PageNum pageNum)
 {
    int     rc;               // return code
@@ -398,6 +420,7 @@ RC PF_FileHandle::MarkDirty(PageNum pageNum) const
 // In:   pageNum - number of the page to unpin
 // Ret:  PF return code
 //
+/* 表明此page不再需要缓存在缓冲区中 => 或直接覆盖、或先写回磁盘 */
 RC PF_FileHandle::UnpinPage(PageNum pageNum) const
 {
    // File must be open
@@ -462,6 +485,7 @@ RC PF_FileHandle::FlushPages() const
 // Ret:  Standard PF errors
 //
 //
+/* 将此文件在缓冲区中所有脏page写回磁盘,然后取消脏位标志; 默认所有page */
 RC PF_FileHandle::ForcePages(PageNum pageNum) const
 {
    // File must be open
@@ -469,10 +493,10 @@ RC PF_FileHandle::ForcePages(PageNum pageNum) const
       return (PF_CLOSEDFILE);
 
    // If the file header has changed, write it back to the file
-   if (bHdrChanged) {
+   if (bHdrChanged) {    /* 说明是脏数据 */
 
       // First seek to the appropriate place
-      if (lseek(unixfd, 0, L_SET) < 0)
+      if (lseek(unixfd, 0, L_SET) < 0)    /*SEEK_SET表示将文件偏移量设置为__offset(此处为0)*/
          return (PF_UNIX);
 
       // Write header
