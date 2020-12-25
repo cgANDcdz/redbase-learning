@@ -17,7 +17,7 @@
 //
 #define MAXNAME       24                // maximum length of a relation
                                         // or attribute name
-#define MAXSTRINGLEN  255               // maximum length of a
+#define MAXSTRINGLEN  255               // maximum length of a 
                                         // string-type attribute
 #define MAXATTRS      40                // maximum number of attributes
                                         // in a relation
@@ -72,8 +72,13 @@ enum AttrType {
 // Comparison operators
 //
 enum CompOp {
-    NO_OP,                                      // no comparison
-    EQ_OP, NE_OP, LT_OP, GT_OP, LE_OP, GE_OP    // binary atomic operators
+    NO_OP,                                      // no comparison => 说明比较的值是空指针
+    EQ_OP,                                      // attr=value
+    NE_OP,                                      // attr!=value
+    LT_OP,                                      // attr<value   (less than)
+    GT_OP,                                      // attr>value   (greater than)
+    LE_OP,                                      // attr<=value  (less than or equal)
+    GE_OP                                       // attr>=value  (greater than or equal)
 };
 
 //

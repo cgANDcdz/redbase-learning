@@ -93,7 +93,7 @@ public:
    RC GetFirstPage(PF_PageHandle &pageHandle) const;
    // Get the next page after current
    RC GetNextPage (PageNum current, PF_PageHandle &pageHandle) const;
-   // Get a specific page
+   // Get a specific page => 会被pin在缓冲区中,必须手动显示地unpin
    RC GetThisPage (PageNum pageNum, PF_PageHandle &pageHandle) const;
    // Get the last page
    RC GetLastPage(PF_PageHandle &pageHandle) const;

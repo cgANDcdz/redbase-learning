@@ -263,7 +263,7 @@ RC PF_FileHandle::GetThisPage(PageNum pageNum, PF_PageHandle &pageHandle) const
 //                    this function modifies local var's in pageHandle
 // Ret:  PF return code
 //
-/* 给当前文件分配一个新的page; 将新的page读取到内存缓冲区; 同时将新的page与pageHandle绑定 */
+/* 给当前文件分配一个新的page; 将新的页pin内存缓冲区; 同时将新的page与pageHandle绑定 */
 RC PF_FileHandle::AllocatePage(PF_PageHandle &pageHandle)
 {
    int     rc;               // return code

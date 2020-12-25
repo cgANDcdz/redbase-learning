@@ -58,7 +58,7 @@ PF_Manager::~PF_Manager()
 // Ret:  PF return code
 //
 /******************************************************************
- * .通过系统调用open创建文件,然后将自定义形式的头信息写入文件开始处 
+ * .通过系统调用open创建文件,然后将自定义形式的文件头信息写入文件开始处 
  * .理解unlink(fname)函数:如果指向这个文件的引用数(硬链接)大于1,则引用计
  *    数减一;否则删除这个文件
  * ****************************************************************/
@@ -162,10 +162,9 @@ RC PF_Manager::OpenFile (const char *fileName, PF_FileHandle &fileHandle)
          O_RDWR)) < 0)
       return (PF_UNIX);
 
-   // Read the file header
+   // Read the file header  /*读取PF层文件头信息*/
    {
-      int numBytes = read(fileHandle.unixfd, (char *)&fileHandle.hdr,
-            sizeof(PF_FileHdr));
+      int numBytes = read(fileHandle.unixfd, (char *)&fileHandle.hdr,sizeof(PF_FileHdr));
       if (numBytes != sizeof(PF_FileHdr)) {
          rc = (numBytes < 0) ? PF_UNIX : PF_HDRREAD;
          goto err;
