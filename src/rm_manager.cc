@@ -4,6 +4,7 @@
 // Authors:     Aditya Bhandari (adityasb@stanford.edu)
 //
 
+#include<stdio.h>
 #include<cstring>
 #include "rm.h"
 using namespace std;
@@ -32,7 +33,7 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
     if(recordSize<=0){
         return RM_RECORD_TOO_SMALL;
     }
-    if(recordSize > PF_PAGE_SIZE-sizeof(RM_PageHdr)){   /*注意减去页头*/
+    if((unsigned int)recordSize > PF_PAGE_SIZE-sizeof(RM_PageHdr)){   /*注意减去页头*/
         return RM_RECORD_TOO_BIG;
     }
     if(fileName==NULL){
@@ -135,20 +136,36 @@ RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
 RC RM_Manager::CloseFile(RM_FileHandle &fileHandle) {
     /* 1.获取PF层的PF_FileHandle*/
     PF_FileHandle* pfFileHandle;
-    fileHandle.GetPfFileHandle(pfFileHandle);
+    RC rc=fileHandle.GetPfFileHandle(pfFileHandle);
+    if(rc<0){
+        RM_PrintError(rc);
+        return rc;
+    }
 
     /* 2.如果修改了rmFileHdr对象,需要将其写入RM文件头!*/
     if(fileHandle.IsHdrChanged()){      
         PF_PageHandle pageHandle;
-        pfFileHandle->GetThisPage(1,pageHandle);       /* RM层的头*/
+        rc=pfFileHandle->GetThisPage(1,pageHandle);       /* RM层的头*/
+        if(rc<0){
+            PF_PrintError(rc);
+            return RM_PF;
+        }
 
         RM_FileHdr rmFileHdr;
-        fileHandle.GetRmFileHdr(rmFileHdr);
+        rc=fileHandle.GetRmFileHdr(rmFileHdr);
+        if(rc<0){
+            RM_PrintError(rc);
+            return rc;
+        }
 
         char* pPageData;
-        pageHandle.GetData(pPageData);
-
-        memcpy(pPageData,&rmFileHdr,sizeof(rmFileHdr));
+        rc=pageHandle.GetData(pPageData);
+        if(rc<0){
+            PF_PrintError(rc);
+            return RM_PF;
+        }
+        
+        memcpy(pPageData,&rmFileHdr,sizeof(RM_FileHdr));
 
         pfFileHandle->MarkDirty(1);
 

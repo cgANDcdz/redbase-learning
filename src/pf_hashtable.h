@@ -11,14 +11,14 @@
 #include "pf_internal.h"
 
 //
-// HashEntry - Hash table bucket entries
-//
+// HashEntry - Hash table bucket entries 
+//=> hashtable的一个bucket对应一个双向链表,PF_HashEntry是一个链表项
 struct PF_HashEntry {
     PF_HashEntry *next;   // next hash table element or NULL
     PF_HashEntry *prev;   // prev hash table element or NULL
     int          fd;      // file descriptor
     PageNum      pageNum; // page number
-    int          slot;    // slot of this page in the buffer
+    int          slot;    // slot of this page in the buffer,它在缓冲区中的编号
 };
 
 //
@@ -36,10 +36,14 @@ public:
     RC  Delete   (int fd, PageNum pageNum);  // Delete a hash table entry
 
 private:
-    int Hash     (int fd, PageNum pageNum) const
-      { return ((fd + pageNum) % numBuckets); }   // Hash function
+    // Hash function:(fd + pageNum) % numBuckets
+    int Hash (int fd, PageNum pageNum) const {
+         return ((fd + pageNum) % numBuckets); 
+    }   
+
+
     int numBuckets;                               // Number of hash table buckets
-    PF_HashEntry **hashTable;                     // Hash table
+    PF_HashEntry **hashTable;                     // Hash table => 看做一个数组,输出每一项是一个双向链表
 };
 
 #endif

@@ -30,7 +30,7 @@ using namespace std;
 //
 // Defines
 //
-#define FILENAME   "testrel"         // test file name
+#define FILENAME   (char*)"testrel"         // test file name
 #define STRLEN      29               // length of string in testrec
 #define PROG_UNIT   50               // how frequently to give progress
                                       //   reports when adding lots of recs
@@ -55,8 +55,8 @@ struct TestRec {
 //
 // Global PF_Manager and RM_Manager variables
 //
-PF_Manager pfm;
-RM_Manager rmm(pfm);
+PF_Manager pfm;                     /*PF层管理器实例*/
+RM_Manager rmm(pfm);                /*RM层管理器实例*/
 
 //
 // Function declarations
@@ -100,16 +100,22 @@ int main(int argc, char *argv[])
     int  testNum;
 
     // Write out initial starting message
-    cerr.flush();
+    cerr.flush();                               /*刷新内存缓冲区(本来这部分内容是要输出到cerr,只是可能还没输出,flush强行立即输出)*/
     cout.flush();
     cout << "Starting RM component test.\n";
     cout.flush();
 
     // Delete files from last time
+    /**
+     * 执行unlink()函数并不一定会真正的删除文件.它先会检查文件系统中此文件的连接数是否为1,
+     * 如果不是1说明此文件还有其他链接对象,因此只对此文件的连接数进行减1操作; 若连接数为1,
+     * 并且在此时没有任何进程打开该文件,此内容才会真正地被删除掉.在有进程打开此文件的情况下,
+     * 则暂时不会删除,直到所有打开该文件的进程都结束时文件就会被删除.
+     * */
     unlink(FILENAME);
 
     // If no argument given, do all tests
-    if (argc == 1) {
+    if (argc == 1) {                                            /*测试所有Testxx()*/
         for (testNum = 0; testNum < NUM_TESTS; testNum++)
             if ((rc = (tests[testNum])())) {
 
@@ -182,7 +188,11 @@ void LsFile(char *fileName)
 
     sprintf(command, "ls -l %s", fileName);
     printf("doing \"%s\"\n", command);
-    system(command);
+
+    /* ret is add by cdz*/
+    int ret=system(command);
+    printf("ret of system in LsFile is:%d\n", ret);
+
 }
 
 //
@@ -459,10 +469,13 @@ RC Test1(void)
 
     printf("test1 starting ****************\n");
 
-    if ((rc = CreateFile(FILENAME, sizeof(TestRec))) ||
-        (rc = OpenFile(FILENAME, fh)) ||
-        (rc = CloseFile(FILENAME, fh)))
-        return (rc);
+    if ((rc = CreateFile(FILENAME, sizeof(TestRec))) 
+        ||(rc = OpenFile(FILENAME, fh)) 
+        ||(rc = CloseFile(FILENAME, fh)))
+    {
+        return (rc);  
+    }
+        
 
     LsFile(FILENAME);
 

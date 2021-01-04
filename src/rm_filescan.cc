@@ -19,7 +19,7 @@ RM_FileScan::~RM_FileScan() {
 
 // Initialize a file scan
 RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle, AttrType attrType, int attrLength,
-                         int attrOffset, CompOp compOp, void *value, ClientHint pinHint = NO_HINT) {
+                         int attrOffset, CompOp compOp, void *value, ClientHint pinHint) { /*ClientHint pinHint = NO_HINT*/
     if(bScanOpen){
         return RM_SCAN_ALREADY_OPEN;
     }
@@ -145,6 +145,7 @@ RC RM_FileScan::CloseScan() {
         return RM_SCAN_NOT_OPEN;
     }
     bScanOpen=false;
+    return OK_RC;
 }
 
 
@@ -162,39 +163,39 @@ bool RM_FileScan::IsMatch(char* attr){
             break;
             
         case EQ_OP:                         /*attr==val*/
-            if(compOp==INT)         return *((int*)attr) == *((int*)value);
-            else if(compOp==FLOAT)  return *((float*)attr) == *((float*)value);
-            else if(compOp==STRING) return  strncmp(attr,(char*)value,attrLength)==0; 
+            if(attrType==INT)         return *((int*)attr) == *((int*)value);
+            else if(attrType==FLOAT)  return *((float*)attr) == *((float*)value);
+            else if(attrType==STRING) return  strncmp(attr,(char*)value,attrLength)==0; 
             break;
 
         case NE_OP:                         /*attr!=val*/
-            if(compOp==INT)         return !(*((int*)attr) == *((int*)value));
-            else if(compOp==FLOAT)  return !(*((float*)attr) == *((float*)value));
-            else if(compOp==STRING) return  !(strncmp(attr,(char*)value,attrLength)==0); 
+            if(attrType==INT)         return !(*((int*)attr) == *((int*)value));
+            else if(attrType==FLOAT)  return !(*((float*)attr) == *((float*)value));
+            else if(attrType==STRING) return  !(strncmp(attr,(char*)value,attrLength)==0); 
             break;
 
         case LT_OP:                         /*attr<val*/
-            if(compOp==INT)         return *((int*)attr) < *((int*)value);
-            else if(compOp==FLOAT)  return *((float*)attr) < *((float*)value);
-            else if(compOp==STRING) return  strncmp(attr,(char*)value,attrLength)<0; 
+            if(attrType==INT)         return *((int*)attr) < *((int*)value);
+            else if(attrType==FLOAT)  return *((float*)attr) < *((float*)value);
+            else if(attrType==STRING) return  strncmp(attr,(char*)value,attrLength)<0; 
             break;
 
         case GT_OP:                         /*attr>val*/
-            if(compOp==INT)         return *((int*)attr) > *((int*)value);
-            else if(compOp==FLOAT)  return *((float*)attr) > *((float*)value);
-            else if(compOp==STRING) return  strncmp(attr,(char*)value,attrLength)>0; 
+            if(attrType==INT)         return *((int*)attr) > *((int*)value);
+            else if(attrType==FLOAT)  return *((float*)attr) > *((float*)value);
+            else if(attrType==STRING) return  strncmp(attr,(char*)value,attrLength)>0; 
             break;
 
         case LE_OP:                         /*attr<=val*/
-            if(compOp==INT)         return *((int*)attr) <= *((int*)value);
-            else if(compOp==FLOAT)  return *((float*)attr) <= *((float*)value);
-            else if(compOp==STRING) return  strncmp(attr,(char*)value,attrLength)<=0; 
+            if(attrType==INT)         return *((int*)attr) <= *((int*)value);
+            else if(attrType==FLOAT)  return *((float*)attr) <= *((float*)value);
+            else if(attrType==STRING) return  strncmp(attr,(char*)value,attrLength)<=0; 
             break;
 
         case GE_OP:                         /*attr>=val*/
-            if(compOp==INT)         return *((int*)attr) >= *((int*)value);
-            else if(compOp==FLOAT)  return *((float*)attr) >= *((float*)value);
-            else if(compOp==STRING) return  strncmp(attr,(char*)value,attrLength)>=0; 
+            if(attrType==INT)         return *((int*)attr) >= *((int*)value);
+            else if(attrType==FLOAT)  return *((float*)attr) >= *((float*)value);
+            else if(attrType==STRING) return  strncmp(attr,(char*)value,attrLength)>=0; 
             break;
 
         default:

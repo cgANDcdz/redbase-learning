@@ -21,11 +21,11 @@
 /********************************************************************************
  *                         PF 相关类的声明
  * 
- * 1.每个page头部都有部分头信息,头信息占4Byte
- * 2.
+ * 1.在PF层,每个page头部都有部分头信息PF_PageHdr,头信息占4Byte => 数据部分占4092字节
+ * 2.关注PF_PageHdr => 见pf_internal.h
+ * 3.由于文件头PF_FileHdr不算在page里面,它不会缓存在redbase的缓冲区中
+ *   所以需要手动将其写入磁盘!!!
  * *****************************************************************************/
-
-
 
 
 //
@@ -78,7 +78,7 @@ struct PF_FileHdr {
 class PF_BufferMgr;
 
 class PF_FileHandle {
-   friend class PF_Manager;
+   friend class PF_Manager;                     /*指定友元类,可直接访问私有数据,而不必通过函数提供接口!*/
 public:
    PF_FileHandle  ();                            // Default constructor
    ~PF_FileHandle ();                            // Destructor
@@ -165,7 +165,7 @@ public:
    RC DisposeBlock  (char *buffer);
 
 private:
-   PF_BufferMgr *pBufferMgr;                      // page-buffer manager
+   PF_BufferMgr *pBufferMgr;                      // page-buffer manager; PF_Manager的构造函数中动态分配
 };
 
 //

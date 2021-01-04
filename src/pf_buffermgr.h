@@ -18,23 +18,34 @@
 #include "pf_internal.h"
 #include "pf_hashtable.h"
 
-//
-// Defines
-//
-
 // INVALID_SLOT is used within the PF_BufferMgr class which tracks a list
 // of PF_BufPageDesc.  Inside the PF_BufPageDesc are integer "pointers" to
 // next and prev items.  INVALID_SLOT is used to indicate no previous or
 // next.
 #define INVALID_SLOT  (-1)
 
+/*************************************************************************************
+ *                                  缓冲区管理器声明
+ * 1.缓冲区的组织方式:
+ *     => redbase中,对缓冲区的管理,其实就是hash表+双向链表,与leetcode中那道LRU题目总体类似
+ *        只是实现细节上有所区别
+ * 2.文件系统中文件的组织方式:
+ *      |PF_FileHdr | page0 | page1 | page2 | .....| pagen |
+ * 3.之后需要考虑RM层的文件头,那么文件实际如下:
+ *      |PF_FileHdr | RM_FileHdr(page0) | page1 | page2 | .....| pagen |
+ *      即RM_FileHdr页号为0, 而PF_FileHdr没有页号
+ * 4.理解使用hashtable的目的:
+ *     => 能根据(fd,pageNum)快速找到page在缓冲区中的所有信息(通过slot查找PF_BufPageDesc项)
+ * ***********************************************************************************/
+
+
 //
 // PF_BufPageDesc - struct containing data about a page in the buffer
-//
+// 表示一个缓冲区页的数据结构
 struct PF_BufPageDesc {
-    char       *pData;      // page contents
-    int        next;        // next in the linked list of buffer pages
-    int        prev;        // prev in the linked list of buffer pages
+    char       *pData;      // page contents=> 使用时动态分配内存,大小为4096,作为一个page在内存的缓冲区
+    int        next;        // next in the linked list of buffer pages,使用bufTable下标表示
+    int        prev;        // prev in the linked list of buffer pages,使用bufTable下标表示
     int        bDirty;      // TRUE if page is dirty
     short int  pinCount;    // pin count
     PageNum    pageNum;     // page number for this page
@@ -101,13 +112,13 @@ private:
     // Init the page desc entry
     RC  InitPageDesc (int fd, PageNum pageNum, int slot);
 
-    PF_BufPageDesc *bufTable;                     // info on buffer pages
+    PF_BufPageDesc *bufTable;                     // info on buffer pages => 是数组,PF_BUFFER_SIZE个
     PF_HashTable   hashTable;                     // Hash table object
     int            numPages;                      // # of pages in the buffer
-    int            pageSize;                      // Size of pages in the buffer
-    int            first;                         // MRU page slot
+    int            pageSize;                      // Size of pages in the buffer => 通常4096
+    int            first;                         // MRU page slot => first、last都是对应used链表
     int            last;                          // LRU page slot
-    int            free;                          // head of free list
+    int            free;                          // head of free list => 空闲链表
 };
 
 #endif

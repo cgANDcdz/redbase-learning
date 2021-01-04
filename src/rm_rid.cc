@@ -25,16 +25,6 @@ RID::~RID() {
     // Don't need to do anything
 }
 
-// Copy constructor
-RID::RID(const RID &rid) {
-
-}
-
-// Overload =
-RID& RID::operator=(const RID &rid) {
-
-}
-
 
 // Return page number
 /* 此处const的理解:表示成员函数隐含传入的this指针为const指针
@@ -55,4 +45,5 @@ RC RID::GetSlotNum(SlotNum &slotNum) const {
 RC RID::SetMembers(PageNum pageNum, SlotNum slotNum){
     this->pageNum=pageNum;
     this->slotNum=slotNum;
+    return OK_RC;
 }

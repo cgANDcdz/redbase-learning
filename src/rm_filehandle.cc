@@ -105,7 +105,8 @@ RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
     /* 3.将插入的记录数据写入缓冲区中page的slotNum对应的位置*/
     char* pPageData;
     pageHandle.GetData(pPageData);
-    int slots=GetPageSlots();
+    int slots;
+    GetPageSlots(slots);
     int bmapBytes=GetBMapBytes(slots);
     char* pSlotData=pPageData + sizeof(RM_PageHdr) + bmapBytes + slotNum*rmFileHdr.recordSize;
     memcpy(pSlotData,pData,rmFileHdr.recordSize);
@@ -162,8 +163,8 @@ RC RM_FileHandle::DeleteRec(const RID &rid) {
         rmFileHdr.firstFreePage=pageNum;
         bHdrChanged=true;
     }
-    ResetSlot(pPageData,SlotNum);
 
+    ResetSlot(pPageData,SlotNum);
 
     /* 5.由于修改了page信息,需标记为dirty*/
     pfFileHandle->MarkDirty(pageNum);
@@ -216,7 +217,7 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
 
 // Forces a page (along with any contents stored in this class)
 // from the buffer pool to disk.  Default value forces all pages.
-RC RM_FileHandle::ForcePages(PageNum pageNum = ALL_PAGES) {
+RC RM_FileHandle::ForcePages(PageNum pageNum) {      /*PageNum pageNum = ALL_PAGES,只能在函数定义中缺省,函数声明中不能缺省*/
     if(!bFileOpen){
         return RM_FILE_NOT_OPEN;
     }
@@ -230,12 +231,15 @@ RC RM_FileHandle::ForcePages(PageNum pageNum = ALL_PAGES) {
 /*获取成员变量pfFileHandle(指针)*/
 RC RM_FileHandle::GetPpfFileHandle(PF_FileHandle*& pfFileHandle){
     pfFileHandle=this->pfFileHandle;
+    return OK_RC;
 }
 
 /*获取当前文件中,在RM层存储的*/
 RC RM_FileHandle::GetRmNumPages(int& numPages){
     numPages=rmFileHdr.numPages;
+    return OK_RC;
 }
+
 
 
 /*判断文件是打开*/
@@ -292,7 +296,8 @@ RC RM_FileHandle::GetSlotData(PF_PageHandle pageHandle,SlotNum slotNum,char *&pR
         return RM_PF;
     }
 
-    int totalSlots=GetPageSlots();
+    int totalSlots;
+    GetPageSlots(totalSlots);
     int bmapBytes=GetBMapBytes(totalSlots);
     pRecData = pPageData + sizeof(RM_PageHdr) + bmapBytes + slotNum*(rmFileHdr.recordSize);
 
@@ -305,7 +310,6 @@ RC RM_FileHandle::GetOneFreePage(PageNum& pageNum){
         return RM_FILE_NOT_OPEN;
     }
     
-    RC rc;
 
     /* 1.如果文件中尚有未满的page*/
     if(rmFileHdr.firstFreePage!=RM_PAGE_LIST_END){
@@ -313,8 +317,8 @@ RC RM_FileHandle::GetOneFreePage(PageNum& pageNum){
         /* 1.1 通过RM层文件头得到第一个未满的page*/
         PF_PageHandle pageHandle;
         PageNum freePage=rmFileHdr.firstFreePage;
-        rc=pfFileHandle->GetThisPage(freePage,pageHandle);     /* 读取到内存缓冲区pin住 */
-        rc=pageHandle.GetPageNum(pageNum);
+        pfFileHandle->GetThisPage(freePage,pageHandle);     /* 读取到内存缓冲区pin住 */
+        pageHandle.GetPageNum(pageNum);
 
         /* 1.2 unpin该页数据*/
         pfFileHandle->UnpinPage(freePage);
@@ -328,13 +332,13 @@ RC RM_FileHandle::GetOneFreePage(PageNum& pageNum){
 
         /* 2.1分配一个新的page; 获取其pageNum; 获取其pPageData*/
         char* pPageData;
-        rc=pfFileHandle->AllocatePage(pageHandle);  /*AllocatePage会将数据pin到缓冲区*/
+        pfFileHandle->AllocatePage(pageHandle);  /*AllocatePage会将数据pin到缓冲区*/
         pageHandle.GetPageNum(pageNum);
         pageHandle.GetData(pPageData);
 
         /* 2.2 将RM层的页头信息写入page*/
         RM_PageHdr rmPageHdr;
-        rmPageHdr.numSlots=GetPageSlots();
+        GetPageSlots(rmPageHdr.numSlots);
         rmPageHdr.numFreeSlots=rmPageHdr.numSlots;
         rmPageHdr.nextFreePage=RM_PAGE_LIST_END;            /*新分配的page,肯定是空闲链表的最后一块(而不是用slot已满标志)*/
         //rmPageHdr.bitMap=new char[rmPageHdr.numSlots];
@@ -414,7 +418,7 @@ RC RM_FileHandle::SetSlot(char* pPageData,int slotNum){
 
 
 /*对于指定的页(pPageData),将其第slotNum对应的槽标记为未使用(0); 随之修改页头*/
-RC ResetSlot(char* pPageData,int slotNum){
+RC RM_FileHandle::ResetSlot(char* pPageData,int slotNum){
     char lastByte=*(pPageData+slotNum/8);
     char mask=1<<(8-slotNum%8 -1);          /*除要置位的bit外全为0*/
     mask=~mask;                             /*除要置位的bit外全为1*/

@@ -15,13 +15,15 @@
 
 
 /*********************************************************************************************
- *                                          文件管理器
- * 作用:完成文件的创建、打开、关闭、删除等工作
+ *                                        整个PF层的管理器
+ * 作用:完成文件的创建、打开、关闭、删除等工作;
  * 注意事项:
  *    1.包含指向PF_BufferMgr的指针
- *    2.对于打开的文件,rebase添加了自行定义的文件头信息(4byte)
- *    3.理解unlink函数(见CreateFile)
- *    4.如何理解scratch page(AllocateBlock()与之相关) ??? 
+ *    2.对于打开的文件,PF层添加了头信息 => |PF_FileHdr| page0 | page1 | page2 | ... | pagen |
+ *    3.对于每个数据页,PF层添加了页头信息(4byte)=> 所以PF_PAGE_SIZE=4092(4096-4)
+ *    4.理解unlink函数(见CreateFile)
+ *    5.如何理解scratch page(AllocateBlock()与之相关) ??? 
+ *    6.注意文件描述符是对进程而言的概念,一个文件可以打开多次,对应不同文件描述符
  * *******************************************************************************************/
 //
 // PF_Manager
@@ -31,6 +33,7 @@
 //       It is associated with a PF_BufferMgr that manages the page
 //       buffer and executes the page replacement policies.
 //
+// 构造函数,动态分配PF_BufferMgr对象
 PF_Manager::PF_Manager()
 {
    // Create Buffer Manager
@@ -44,6 +47,7 @@ PF_Manager::PF_Manager()
 //       Destroys the buffer manager.
 //       All files are expected to be closed when this method is called.
 //
+// 析构函数,需要释放pBufferMgr
 PF_Manager::~PF_Manager()
 {
    // Destroy the buffer manager objects
@@ -58,9 +62,10 @@ PF_Manager::~PF_Manager()
 // Ret:  PF return code
 //
 /******************************************************************
- * .通过系统调用open创建文件,然后将自定义形式的文件头信息写入文件开始处 
+ * .通过系统调用open创建文件,然后将PF层文件头信息写入文件开始处; 
  * .理解unlink(fname)函数:如果指向这个文件的引用数(硬链接)大于1,则引用计
- *    数减一;否则删除这个文件
+ *    数减一;否则删除这个文件(注意这里的引用计数并非打开该文件的进程数)
+ * .创建文件时,只写了PF文件头,并没有往文件写更多的数据
  * ****************************************************************/
 RC PF_Manager::CreateFile (const char *fileName)
 {
@@ -94,7 +99,7 @@ RC PF_Manager::CreateFile (const char *fileName)
 
       // Error while writing: close and remove file
       close(fd);
-      unlink(fileName);
+      unlink(fileName);                 /*写文件头失败,需要删除文件*/
 
       // Return an error
       if(numBytes < 0)
@@ -118,6 +123,7 @@ RC PF_Manager::CreateFile (const char *fileName)
 // In:   fileName - name of file to delete
 // Ret:  PF return code
 //
+// 删除文件
 RC PF_Manager::DestroyFile (const char *fileName)
 {
    // Remove the file
@@ -145,7 +151,9 @@ RC PF_Manager::DestroyFile (const char *fileName)
 //       buffer manager object
 // Ret:  PF_FILEOPEN or other PF return code
 //
-/* 使用open系统调用打开一个已通过CreateFile创建的文件; 将这个打开的文件与PF_FileHandle对象关联! */
+// 使用open系统调用打开一个已通过CreateFile创建的文件; 
+// 然后将这个打开的文件与PF_FileHandle对象关联! 
+// 注意文件描述符是对进程而言的概念,一个文件可以打开多次,对应不同文件描述符
 RC PF_Manager::OpenFile (const char *fileName, PF_FileHandle &fileHandle)
 {
    int rc;                   // return code
@@ -202,7 +210,7 @@ err:
 //                    this function modifies local var's in fileHandle
 // Ret:  PF return code
 //
-/* 关闭已打开文件,将文件所有页释放; 如果有页仍然pinned在buffer中,返回错误! */
+//关闭已打开文件,将文件所有页的缓冲区释放,将脏数据写回磁盘(FlushPages())  
 RC PF_Manager::CloseFile(PF_FileHandle &fileHandle)
 {
    RC rc;
@@ -239,6 +247,7 @@ RC PF_Manager::CloseFile(PF_FileHandle &fileHandle)
 // Ret:  Returns the result of PF_BufferMgr::ClearBuffer
 //       It is a code: 0 for success, something else for a PF error.
 //
+// 清空缓冲区
 RC PF_Manager::ClearBuffer()
 {
    return pBufferMgr->ClearBuffer();
@@ -289,11 +298,15 @@ RC PF_Manager::GetBlockSize(int &length) const
    return pBufferMgr->GetBlockSize(length);
 }
 
+
+/*在缓冲区中分配一个page,返回其内存地址(指针)*/
 RC PF_Manager::AllocateBlock(char *&buffer)
 {
    return pBufferMgr->AllocateBlock(buffer);
 }
 
+
+/*删除一个指定的page缓冲区,必须与AllocateBlock成对使用!*/
 RC PF_Manager::DisposeBlock(char *buffer)
 {
    return pBufferMgr->DisposeBlock(buffer);

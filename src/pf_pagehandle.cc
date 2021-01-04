@@ -101,7 +101,8 @@ PF_PageHandle& PF_PageHandle::operator= (const PF_PageHandle &pageHandle)
 // Out:  pData - Set pData to point to the page contents
 // Ret:  PF return code
 //
-/* 将该page数据部分的指针赋值给pData; 注意这个page必须缓存在缓冲区中 */
+// 将该page数据部分的指针赋值给pData;
+// 注意这个page必须缓存在缓冲区中
 RC PF_PageHandle::GetData(char *&pData) const
 {
   // Page must refer to a pinned page

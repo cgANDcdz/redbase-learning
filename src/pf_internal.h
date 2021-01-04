@@ -17,7 +17,7 @@
 // Constants and defines
 //
 const int PF_BUFFER_SIZE = 40;     // Number of pages in the buffer
-const int PF_HASH_TBL_SIZE = 20;   // Size of hash table
+const int PF_HASH_TBL_SIZE = 20;   // Size of hash table => hashtable的bucket数
 
 #define CREATION_MASK      0600    // r/w privileges to owner only
 #define PF_PAGE_LIST_END  -1       // end of list of free pages
@@ -32,7 +32,9 @@ const int PF_HASH_TBL_SIZE = 20;   // Size of hash table
 
 //
 // PF_PageHdr: Header structure for pages
-//
+// 1.如果这个page为空(没有任何数据),则nextFree指向下一个空闲页
+// 2.如果这个page被使用(只要填充了数据),则nextFree赋值为PF_PAGE_USED表示
+// 3.如果这个page是空闲链表最后一页,则nextFree赋值为PF_PAGE_LIST_END表示
 struct PF_PageHdr {
     int nextFree;       // nextFree can be any of these values:
                         //  - the number of the next free page
